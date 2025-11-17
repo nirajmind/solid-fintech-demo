@@ -1,0 +1,59 @@
+sequenceDiagram
+    actor Client
+    participant FilterChain as Spring Security<br/>Filter Chain
+    participant JwtFilter as JwtRequestFilter
+    participant AuthManager as AuthenticationManager
+    participant UserSvc as UserDetailsService
+    participant JwtUtil as JwtUtil
+    participant AuthCtrl as AuthController
+    participant UserCtrl as UserController
+
+    %% --- 1. Successful Login and Token Generation ---
+    loop Authentication
+        Client->>+AuthCtrl: POST /api/auth/login (username, password)
+        Note over AuthCtrl: (Request is public, bypasses JwtFilter)
+        AuthCtrl->>+AuthManager: authenticate(UsernamePasswordAuthenticationToken)
+        AuthManager->>+UserSvc: loadUserByUsername(username)
+        UserSvc-->>-AuthManager: UserDetails (with hashed password)
+        Note right of AuthManager: Compares request password & UserDetails password
+        AuthManager-->>-AuthCtrl: Authentication object (success)
+        
+        AuthCtrl->>+UserSvc: loadUserByUsername(username)
+        UserSvc-->>-AuthCtrl: UserDetails
+        AuthCtrl->>+JwtUtil: generateToken(UserDetails)
+        JwtUtil-->>-AuthCtrl: jwtToken
+        AuthCtrl-->>-Client: 200 OK ({"jwt": "..."})
+    end
+
+    %% --- 2. Accessing a Secure Endpoint with JWT ---
+    loop Secure API Call (Success)
+        Client->>+FilterChain: GET /api/users/1 (Header: "Bearer ...jwt...")
+        FilterChain->>+JwtFilter: doFilterInternal(request, response, chain)
+        JwtFilter->>+JwtUtil: extractUsername(jwt)
+        JwtUtil-->>-JwtFilter: username
+        
+        JwtFilter->>+UserSvc: loadUserByUsername(username)
+        UserSvc-->>-JwtFilter: UserDetails
+        
+        JwtFilter->>+JwtUtil: validateToken(jwt, UserDetails)
+        JwtUtil-->>-JwtFilter: true
+        Note over JwtFilter: Sets Authentication in SecurityContextHolder
+        
+        JwtFilter->>FilterChain: chain.doFilter(request, response)
+        FilterChain->>+UserCtrl: GET /api/users/1
+        UserCtrl-->>-FilterChain: 200 OK (UserDTO)
+        FilterChain-->>-Client: 200 OK (UserDTO)
+    end
+
+    %% --- 3. Accessing Secure Endpoint with BAD Token ---
+    loop Secure API Call (Failure)
+        Client->>+FilterChain: GET /api/users/1 (Header: "Bearer ...bad-jwt...")
+        FilterChain->>+JwtFilter: doFilterInternal(request, response, chain)
+        JwtFilter->>+JwtUtil: extractUsername(bad-jwt)
+        JwtUtil-->>-JwtFilter: throws SignatureException
+        
+        Note over JwtFilter: Validation fails. SecurityContext is NOT set.
+        JwtFilter->>FilterChain: chain.doFilter(request, response)
+        Note over FilterChain: ExceptionTranslationFilter catches error
+        FilterChain-->>-Client: 403 Forbidden
+    end
