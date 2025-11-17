@@ -1,0 +1,204 @@
+# 1. PERSISTENCE: Create "claims" for our stateful data.
+# Minikube will automatically provide storage for these.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce # This volume can only be attached to one pod
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonar-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+# 2. DATABASE: Deploy MongoDB
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service # This is the hostname our Spring App will use
+spec:
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+  type: ClusterIP # INTERNAL only. Not exposed outside the cluster.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+
+# 3. APPLICATION: Deploy our Spring Boot App
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: solid-app-service
+spec:
+  selector:
+    app: solid-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer # Expose this service outside the cluster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solid-app-deployment
+spec:
+  replicas: 2 # Let's run 2 instances for high availability!
+  selector:
+    matchLabels:
+      app: solid-app
+  template:
+    metadata:
+      labels:
+        app: solid-app
+    spec:
+      containers:
+        - name: solid-app
+          image: solid-project:latest # The image we will build locally
+          imagePullPolicy: Never # IMPORTANT: Tells K8s to use the local image
+          ports:
+            - containerPort: 8080
+          env: # Set environment variables
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://mongo-service:27017/solid-db"
+
+# 4. TOOLING: Deploy SonarQube
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonar-service
+spec:
+  selector:
+    app: sonar
+  ports:
+    - port: 9000
+      targetPort: 9000
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonar-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: sonar
+    spec:
+      containers:
+        - name: sonar
+          image: sonarqube:community
+          ports:
+            - containerPort: 9000
+          env:
+            - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
+              value: "true"
+          volumeMounts:
+            - name: sonar-storage
+              mountPath: /opt/sonarqube/data
+      volumes:
+        - name: sonar-storage
+          persistentVolumeClaim:
+            claimName: sonar-pvc
+  selector:
+    matchLabels:
+      app: sonar
+
+# 5. TOOLING: Deploy Jenkins
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+spec:
+  selector:
+    app: jenkins
+  ports:
+    - name: http-web
+      port: 8080
+      targetPort: 8080
+    - name: agent-jnlp
+      port: 50000
+      targetPort: 50000
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          volumeMounts:
+            - name: jenkins-storage
+              mountPath: /var/jenkins_home
+      volumes:
+        - name: jenkins-storage
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+  selector:
+    matchLabels:
+      app: jenkins

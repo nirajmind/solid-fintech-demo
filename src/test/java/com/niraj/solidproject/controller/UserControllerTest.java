@@ -49,14 +49,14 @@ class UserControllerPureTest {
     @Test
     void testGetUser_whenUserExists_shouldReturnUserDTO() {
         // 1. ARRANGE
-        UserDTO testUser = new UserDTO(1L, "Niraj", "niraj@example.com");
+        UserDTO testUser = new UserDTO("1", "Niraj", "niraj@example.com");
 
         // "Teach" the mock (same as before)
-        when(userService.getUserById(1L)).thenReturn(testUser);
+        when(userService.getUserById("1")).thenReturn(testUser);
 
         // 2. ACT
         // We call the controller method *directly* (no MockMvc)
-        ResponseEntity<UserDTO> response = userController.getUser(1L);
+        ResponseEntity<UserDTO> response = userController.getUser("1");
 
         // 3. ASSERT
         // We check the response object directly
@@ -70,21 +70,21 @@ class UserControllerPureTest {
     void testGetUser_whenUserNotFound_shouldThrowException() {
         // 1. ARRANGE
         // "Teach" the mock to throw the exception
-        when(userService.getUserById(99L)).thenThrow(new UserNotFoundException("User not found"));
+        when(userService.getUserById("99")).thenThrow(new UserNotFoundException("User not found"));
 
         // 2. ACT & 3. ASSERT
         // We assert that calling the method throws the expected exception.
         // NOTE: Our @ControllerAdvice (exception handler) is NOT running
         // because there is no Spring context. This test only checks that
         // the controller correctly lets the exception bubble up.
-        assertThrows(UserNotFoundException.class, () -> userController.getUser(99L));
+        assertThrows(UserNotFoundException.class, () -> userController.getUser("99"));
     }
 
     @Test
     void testCreateUser_whenValidRequest_shouldReturnCreatedUser() {
         // 1. ARRANGE
         CreateUserRequest request = new CreateUserRequest("New User", "new@example.com", "new@example.com", "password");
-        UserDTO createdUser = new UserDTO(1L, "New User", "new@example.com");
+        UserDTO createdUser = new UserDTO("1", "New User", "new@example.com");
 
         // "Teach" the mock
         when(userService.createUser(any(CreateUserRequest.class))).thenReturn(createdUser);

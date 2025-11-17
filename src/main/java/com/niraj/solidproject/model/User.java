@@ -1,16 +1,19 @@
 package com.niraj.solidproject.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "users")
+//@Entity
+//@Table(name = "users")
+@Document(collection = "users") // <-- Changed from @Entity
 public class User {
 
     @Id
-    @GeneratedValue
-    private Long id;
+    private String id;
     private String name;
-    @Column(unique = true) // Usernames must be unique
+    //@Column(unique = true) // Usernames must be unique
+    @Indexed(unique = true) // Usernames must be unique
     private String username;
     private String email;
     private String password; // New Field
@@ -27,8 +30,8 @@ public class User {
     }
 
     // --- Getters and Setters for ALL fields ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getUsername() { return username; }

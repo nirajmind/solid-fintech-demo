@@ -19,7 +19,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {
+    public ResponseEntity<UserDTO> getUser(@PathVariable String id) {
         // Delegate all logic to the service
         UserDTO user = userService.getUserById(id);
         return ResponseEntity.ok(user);

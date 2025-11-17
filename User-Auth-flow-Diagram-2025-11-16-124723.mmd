@@ -4,56 +4,62 @@ sequenceDiagram
     participant JwtFilter as JwtRequestFilter
     participant AuthManager as AuthenticationManager
     participant UserSvc as UserDetailsService
+    participant UserRepo as UserRepository<br/>(H2 Database)
     participant JwtUtil as JwtUtil
     participant AuthCtrl as AuthController
     participant UserCtrl as UserController
 
-    %% --- 1. Successful Login and Token Generation ---
+%% --- 1. Successful Login (Using Database) ---
     loop Authentication
         Client->>+AuthCtrl: POST /api/auth/login (username, password)
         Note over AuthCtrl: (Request is public, bypasses JwtFilter)
+
         AuthCtrl->>+AuthManager: authenticate(UsernamePasswordAuthenticationToken)
+
+    %% This is the key change: AuthManager calls UserDetailsService, which calls the Repo
         AuthManager->>+UserSvc: loadUserByUsername(username)
-        UserSvc-->>-AuthManager: UserDetails (with hashed password)
-        Note right of AuthManager: Compares request password & UserDetails password
+        UserSvc->>+UserRepo: findByUsername(username)
+        UserRepo-->>-UserSvc: User Entity (with Hashed Password)
+        UserSvc-->>-AuthManager: UserDetails object
+
+        Note right of AuthManager: Validates hash matches password
         AuthManager-->>-AuthCtrl: Authentication object (success)
-        
+
         AuthCtrl->>+UserSvc: loadUserByUsername(username)
+        UserSvc->>+UserRepo: findByUsername(username)
+        UserRepo-->>-UserSvc: User Entity
         UserSvc-->>-AuthCtrl: UserDetails
+
         AuthCtrl->>+JwtUtil: generateToken(UserDetails)
         JwtUtil-->>-AuthCtrl: jwtToken
         AuthCtrl-->>-Client: 200 OK ({"jwt": "..."})
     end
 
-    %% --- 2. Accessing a Secure Endpoint with JWT ---
-    loop Secure API Call (Success)
+%% --- 2. Accessing Secure Endpoint (Using Database) ---
+    loop Secure API Call
         Client->>+FilterChain: GET /api/users/1 (Header: "Bearer ...jwt...")
         FilterChain->>+JwtFilter: doFilterInternal(request, response, chain)
+
         JwtFilter->>+JwtUtil: extractUsername(jwt)
         JwtUtil-->>-JwtFilter: username
-        
+
+    %% Token validation now also checks the DB to ensure user still exists
         JwtFilter->>+UserSvc: loadUserByUsername(username)
+        UserSvc->>+UserRepo: findByUsername(username)
+        UserRepo-->>-UserSvc: User Entity
         UserSvc-->>-JwtFilter: UserDetails
-        
+
         JwtFilter->>+JwtUtil: validateToken(jwt, UserDetails)
         JwtUtil-->>-JwtFilter: true
+
         Note over JwtFilter: Sets Authentication in SecurityContextHolder
-        
         JwtFilter->>FilterChain: chain.doFilter(request, response)
+
         FilterChain->>+UserCtrl: GET /api/users/1
+        UserCtrl->>+UserSvc: getUserById(1)
+        UserSvc->>+UserRepo: findById(1)
+        UserRepo-->>-UserSvc: User Entity
+        UserSvc-->>-UserCtrl: UserDTO
         UserCtrl-->>-FilterChain: 200 OK (UserDTO)
         FilterChain-->>-Client: 200 OK (UserDTO)
-    end
-
-    %% --- 3. Accessing Secure Endpoint with BAD Token ---
-    loop Secure API Call (Failure)
-        Client->>+FilterChain: GET /api/users/1 (Header: "Bearer ...bad-jwt...")
-        FilterChain->>+JwtFilter: doFilterInternal(request, response, chain)
-        JwtFilter->>+JwtUtil: extractUsername(bad-jwt)
-        JwtUtil-->>-JwtFilter: throws SignatureException
-        
-        Note over JwtFilter: Validation fails. SecurityContext is NOT set.
-        JwtFilter->>FilterChain: chain.doFilter(request, response)
-        Note over FilterChain: ExceptionTranslationFilter catches error
-        FilterChain-->>-Client: 403 Forbidden
     end

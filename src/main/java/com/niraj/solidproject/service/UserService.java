@@ -5,6 +5,6 @@ import com.niraj.solidproject.dto.UserDTO;
 
 public interface UserService {
 
-    UserDTO getUserById(Long id);
+    UserDTO getUserById(String id);
     UserDTO createUser(CreateUserRequest request);
 }
