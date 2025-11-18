@@ -177,12 +177,17 @@ spec:
             - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
               value: "true"
           volumeMounts:
-            - name: sonar-storage
+            - name: sonar-data
               mountPath: /opt/sonarqube/data
+            - name: sonar-extensions     # Mount Plugins
+              mountPath: /opt/sonarqube/extensions
       volumes:
-        - name: sonar-storage
+        - name: sonar-data
           persistentVolumeClaim:
-            claimName: sonar-pvc
+            claimName: sonar-data-pvc
+        - name: sonar-extensions
+          persistentVolumeClaim:
+            claimName: sonar-extensions-pvc # Matches infra-storage.yaml
   selector:
     matchLabels:
       app: sonar
@@ -198,10 +203,10 @@ spec:
     app: jenkins
   ports:
     - name: http-web
-      port: 8080
+      port: 8081
       targetPort: 8080
     - name: agent-jnlp
-      port: 50000
+      port: 50001
       targetPort: 50000
   type: LoadBalancer
 ---
@@ -227,18 +232,18 @@ spec:
             requests:
               memory: "512Mi"
               cpu: "200m"
-              ephemeral-storage: "500Mi"
+              ephemeral-storage: "512Mi"
             limits:
               memory: "1Gi"
               cpu: "1000m"
               ephemeral-storage: "2Gi"
           volumeMounts:
             - name: jenkins-storage
-              mountPath: /var/jenkins_home
+              mountPath: /var/jenkins_home # Critical Path
       volumes:
         - name: jenkins-storage
           persistentVolumeClaim:
-            claimName: jenkins-pvc
+            claimName: jenkins-pvc      # Matches infra-storage.yaml
   selector:
     matchLabels:
       app: jenkins
