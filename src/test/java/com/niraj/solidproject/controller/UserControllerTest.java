@@ -62,7 +62,7 @@ class UserControllerPureTest {
         // We check the response object directly
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().id()).isEqualTo(1L);
+        assertThat(response.getBody().id()).isEqualTo("1");
         assertThat(response.getBody().name()).isEqualTo("Niraj");
     }
 
@@ -95,6 +95,6 @@ class UserControllerPureTest {
         // 3. ASSERT
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Assertions.assertNotNull(response.getBody());
-        assertThat(response.getBody().id()).isEqualTo(1L);
+        assertThat(response.getBody().id()).isEqualTo("1");
     }
 }
