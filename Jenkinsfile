@@ -1,9 +1,5 @@
 pipeline {
-    agent {
-            // Run the entire pipeline on a node that can execute Docker commands.
-            // We set the base agent to 'any' and will use the 'docker' step within stages.
-            label 'master'
-        }
+    agent any
 
     environment {
         // Define your app name
@@ -34,8 +30,11 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Build the image using the Dockerfile we created
-                    sh "docker build -t solid-project:latest ."
+                    // 1. Install Docker Client (Standard method for Alpine-based images)
+                                sh 'apk add --no-cache docker'
+
+                                // 2. Build the image
+                                sh "docker build -t solid-project:latest ."
                 }
             }
         }
