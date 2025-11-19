@@ -13,9 +13,10 @@ pipeline {
 
             stage('Initialize Tools') {
                         steps {
-                            sh "${DOCKER_BIN}"
-                        }
-                    }
+                                // Use sudo to gain permissions for apt-get
+                                sh 'sudo apt-get update && sudo apt-get install -y docker.io'
+                            }
+            }
 
                     // Stage 2: Build & Test (Now 'mvn' and 'docker' are available)
                     stage('Build & Test') {
