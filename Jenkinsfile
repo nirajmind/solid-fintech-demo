@@ -28,15 +28,19 @@ pipeline {
 
         // Stage 3: Build Docker Image
         stage('Docker Build') {
-            steps {
-                script {
-                    // 1. Install Docker Client (Standard method for Alpine-based images)
-                                sh 'apt-get update && apt-get install -y docker-cli'
-
-                                // 2. Build the image
-                                sh "docker build -t solid-project:latest ."
-                }
-            }
+            agent {
+                        // Use a Jenkins agent image that has the Docker client installed
+                        // This is a cleaner way than running apk/apt commands every time.
+                        docker {
+                            image 'jenkins/agent:jdk17'
+                            // CRUCIAL: Map the Docker socket from the host into the agent container
+                            args '-v /var/run/docker.sock:/var/run/docker.sock'
+                        }
+                    }
+                    steps {
+                        // Now the 'docker' command is available because the agent image provides it.
+                        sh "docker build -t solid-project:latest ."
+                    }
         }
     }
 
