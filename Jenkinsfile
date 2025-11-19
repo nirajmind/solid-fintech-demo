@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     // 1. Install Docker Client (Standard method for Alpine-based images)
-                                sh 'apk add --no-cache docker-cli'
+                                sh 'apt-get update && apt-get install -y docker-cli'
 
                                 // 2. Build the image
                                 sh "docker build -t solid-project:latest ."
