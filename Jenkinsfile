@@ -32,7 +32,7 @@ pipeline {
                         // Use a Jenkins agent image that has the Docker client installed
                         // This is a cleaner way than running apk/apt commands every time.
                         docker {
-                            image 'jenkins/agent:jdk17'
+                            image 'jenkins/inbound-agent:jdk17'
                             // CRUCIAL: Map the Docker socket from the host into the agent container
                             args '-v /var/run/docker.sock:/var/run/docker.sock'
                         }
