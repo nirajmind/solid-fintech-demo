@@ -18,9 +18,10 @@ pipeline {
         // Stage 1: Build and Test
         stage('Build & Test') {
             steps {
-                sh 'chmod +x ./mvnw' // ADD THIS LINE: Grant execute permission
-                sh './mvnw clean package verify'
-            }
+                            // Since the agent is now the Maven image, use 'mvn' directly
+                            // and skip the unnecessary 'chmod +x' and './mvnw' calls.
+                            sh 'mvn clean package verify'
+                        }
         }
 
         // Stage 2: Code Quality
@@ -38,7 +39,8 @@ pipeline {
                             // 'docker' command is now available because the agent image is rich
                             // and the socket is mounted.
                             sh "docker build -t solid-project:latest ."
-                        }
+                   }
+        }
     }
 
     post {
