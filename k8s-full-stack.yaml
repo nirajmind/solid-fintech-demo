@@ -187,6 +187,9 @@ spec:
       labels:
         app: jenkins
     spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       automountServiceAccountToken: false
       containers:
         - name: jenkins
@@ -206,10 +209,16 @@ spec:
           volumeMounts:
             - name: jenkins-storage
               mountPath: /var/jenkins_home # Critical Path
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
       volumes:
         - name: jenkins-storage
           persistentVolumeClaim:
             claimName: jenkins-pvc      # Matches infra-storage.yaml
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
   selector:
     matchLabels:
       app: jenkins
