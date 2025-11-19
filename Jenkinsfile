@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+            // Run the entire pipeline on a node that can execute Docker commands.
+            // We set the base agent to 'any' and will use the 'docker' step within stages.
+            label 'master'
+        }
 
     environment {
         // Define your app name
@@ -31,7 +35,7 @@ pipeline {
             steps {
                 script {
                     // Build the image using the Dockerfile we created
-                    sh "docker build -t ${APP_NAME}:latest ."
+                    sh "docker build -t solid-project:latest ."
                 }
             }
         }
