@@ -13,8 +13,16 @@ pipeline {
 
             stage('Initialize Tools') {
                         steps {
-                                // Use sudo to gain permissions for apt-get
-                                sh 'sudo apt-get update && sudo apt-get install -y docker.io'
+                                sh '''
+                                    # Check for the correct package manager and install Docker CLI as root
+                                    if [ -x "$(command -v apt-get)" ]; then
+                                      apt-get update
+                                      apt-get install -y docker.io
+                                    else
+                                      echo "FATAL: Could not find apt-get. Exiting."
+                                      exit 1
+                                    fi
+                                '''
                             }
             }
 
