@@ -22,7 +22,6 @@ pipeline {
             steps {
                 withSonarQubeEnv('LocalSonar') { // You'll name your server 'LocalSonar' in Jenkins
                     sh "export SONAR_TOKEN='${SONAR_TOKEN}'; ./mvnw sonar:sonar -Dsonar.projectKey=${APP_NAME} -Dsonar.host.url=http://sonarqube:9000"
-                            }
                 }
             }
         }
