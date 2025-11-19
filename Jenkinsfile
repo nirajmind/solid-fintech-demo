@@ -12,10 +12,7 @@ pipeline {
         // Stage 1: Build and Test
         stage('Build & Test') {
             steps {
-                // Use the Maven wrapper included in your project
-                // On Windows, we might need 'bat', on Linux 'sh'
-                // For cross-platform, usually 'sh' inside a docker container is best.
-                // Here we assume Jenkins runs on Linux (the docker image we chose).
+                sh 'chmod +x ./mvnw' // ADD THIS LINE: Grant execute permission
                 sh './mvnw clean package verify'
             }
         }
