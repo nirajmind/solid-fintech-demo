@@ -1,28 +1,36 @@
 pipeline {
-    agent {
-            docker {
-                image 'maven:3.8-openjdk-17'
-                // 2. Map the Docker socket so the Maven container can run 'docker build'
-                args '-v /var/run/docker.sock:/var/run/docker.sock'
-            }
-        }
+    agent any
 
     environment {
         // Define your app name
         APP_NAME = 'solid-project'
         // SonarQube Token (You'll add this in Jenkins credentials later)
         SONAR_TOKEN = credentials('sonar-token')
+        DOCKER_BIN = 'apt-get update && apt-get install -y docker.io'
     }
 
     stages {
-        // Stage 1: Build and Test
-        stage('Build & Test') {
-            steps {
-                            // Since the agent is now the Maven image, use 'mvn' directly
-                            // and skip the unnecessary 'chmod +x' and './mvnw' calls.
-                            sh 'mvn clean package verify'
+
+            stage('Initialize Tools') {
+                        steps {
+                            sh "${DOCKER_BIN}"
                         }
-        }
+                    }
+
+                    // Stage 2: Build & Test (Now 'mvn' and 'docker' are available)
+                    stage('Build & Test') {
+                        steps {
+                            sh 'chmod +x ./mvnw'
+                            sh './mvnw clean package verify'
+                        }
+                    }
+
+                    // Stage 3: Docker Build
+                    stage('Docker Build') {
+                        steps {
+                            sh "docker build -t solid-project:latest ."
+                        }
+                    }
 
         // Stage 2: Code Quality
         stage('SonarQube Analysis') {
@@ -33,14 +41,6 @@ pipeline {
             }
         }
 
-        // Stage 3: Build Docker Image
-        stage('Docker Build') {
-            steps {
-                            // 'docker' command is now available because the agent image is rich
-                            // and the socket is mounted.
-                            sh "docker build -t solid-project:latest ."
-                   }
-        }
     }
 
     post {
