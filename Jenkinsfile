@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    agent {
+            docker {
+                image 'maven:3.8-openjdk-17'
+                // 2. Map the Docker socket so the Maven container can run 'docker build'
+                args '-v /var/run/docker.sock:/var/run/docker.sock'
+            }
+        }
 
     environment {
         // Define your app name
@@ -28,20 +34,11 @@ pipeline {
 
         // Stage 3: Build Docker Image
         stage('Docker Build') {
-            agent {
-                        // Use a Jenkins agent image that has the Docker client installed
-                        // This is a cleaner way than running apk/apt commands every time.
-                        docker {
-                            image 'jenkins/inbound-agent:jdk17'
-                            // CRUCIAL: Map the Docker socket from the host into the agent container
-                            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            steps {
+                            // 'docker' command is now available because the agent image is rich
+                            // and the socket is mounted.
+                            sh "docker build -t solid-project:latest ."
                         }
-                    }
-                    steps {
-                        // Now the 'docker' command is available because the agent image provides it.
-                        sh "docker build -t solid-project:latest ."
-                    }
-        }
     }
 
     post {
