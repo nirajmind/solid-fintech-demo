@@ -62,7 +62,7 @@ spec:
     app: solid-app
   ports:
     - port: 8181
-      targetPort: 8181
+      targetPort: 8080
   type: LoadBalancer # Expose this service outside the cluster
 ---
 apiVersion: apps/v1
@@ -70,7 +70,7 @@ kind: Deployment
 metadata:
   name: solid-app-deployment
 spec:
-  replicas: 2 # Let's run 2 instances for high availability!
+  replicas: 1 # Let's run 2 instances for high availability!
   selector:
     matchLabels:
       app: solid-app
@@ -85,7 +85,24 @@ spec:
           image: solid-project:0.0.1 # The image we will build locally
           imagePullPolicy: Never # IMPORTANT: Tells K8s to use the local image
           ports:
-            - containerPort: 8181
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+            failureThreshold: 10
+                # --- ADD THE READINESS PROBE ---
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness # The endpoint Spring provides
+              port: 8080
+            initialDelaySeconds: 30             # Wait 30s before first check
+            timeoutSeconds: 5                   # Max time allowed per check
+            periodSeconds: 10                   # Check every 10 seconds
+            failureThreshold: 10                 # Fail after 3 consecutive failures
           resources:
             requests:
               memory: "256Mi"

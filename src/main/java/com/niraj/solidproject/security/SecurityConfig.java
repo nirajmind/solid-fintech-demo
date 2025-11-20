@@ -1,5 +1,6 @@
 package com.niraj.solidproject.security;
 
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,13 +33,9 @@ public class SecurityConfig {
                 // 2. Define authorization rules
                 .authorizeHttpRequests(auths -> auths
                         // Allow our login endpoint
+                        .requestMatchers("/api/users").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
-                        // Allow the H2 console
-                        .requestMatchers("/h2-console/**").permitAll()
-                        // Secure all other requests
-                        // 3. NEW: Allow Registration (POST /api/users only)
-                        // We use HttpMethod.POST so that GET /api/users (list users) is STILL secured
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

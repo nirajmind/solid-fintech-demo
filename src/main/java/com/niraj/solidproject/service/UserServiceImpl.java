@@ -5,10 +5,12 @@ import com.niraj.solidproject.dto.UserDTO;
 import com.niraj.solidproject.exception.UserNotFoundException;
 import com.niraj.solidproject.model.User;
 import com.niraj.solidproject.repository.UserRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@Lazy
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
