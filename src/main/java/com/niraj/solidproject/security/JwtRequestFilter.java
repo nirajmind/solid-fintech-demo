@@ -59,4 +59,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         // 3. Continue the filter chain
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return request.getServletPath().startsWith("/api/auth/") ||
+                request.getServletPath().startsWith("/api/users");
+    }
 }

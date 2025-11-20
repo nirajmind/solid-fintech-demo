@@ -1,6 +1,5 @@
 package com.niraj.solidproject.security;
 
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,7 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auths -> auths
                         // Allow our login endpoint
                         .requestMatchers("/api/users").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET,"/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
